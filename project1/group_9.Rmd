@@ -1,0 +1,920 @@
+---
+title: "Analyze the factors that influence happiness in different regions"
+
+output:
+  pdf_document:
+    latex_engine: pdflatex
+    number_sections: yes
+  html_document:
+    df_print: paged
+  word_document: default
+fig_caption: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval = TRUE, warning = FALSE, message = FALSE, comment = NA)
+```
+
+```{r libraries,echo = FALSE}
+library(tidyverse)
+library(moderndive)
+library(skimr)
+library(kableExtra)
+library(gridExtra)
+library(devtools)
+library(magrittr)
+library(ggplot2)
+library(maps)
+library(RColorBrewer)
+library(viridis)
+library(ggpubr)
+library(GGally)
+library(corrplot)
+library(knitr)
+library(olsrr)
+library(data.table)
+library(moderndive)
+library(ggfortify)
+library(diagram)
+
+```
+
+```{r data, echo = FALSE, eval = TRUE, warning = FALSE, message = FALSE}
+happiness <- read_csv("group_9.csv")
+### select the usable variables and name them
+happiness <- happiness[c(1,2,3,7,8,9,10,11,12)]
+colnames(happiness)<-c("Country","Region","Happiness","GDP","Support",
+                    "Expectancy","Freedom","Generosity","Corruption")
+```
+
+# Introduction {#sec:Intro}
+
+Promoting the development of society is human’s immutable goals and motives. In recent years, with the development of material life, people begin to pursue the spiritual satisfaction. The focus of happiness research has shifted from the measurement of life quality with an emphasis on material well-being to subjective well-being.(Lin K,2016) And the definition of social development is constantly updating. At present, people's pursuit of life has gradually shifted from the improving at material level to gradually improving quality of life. In this process, the quality of life has become one of the most important concerns of both the government and massive residents.
+
+Happiness is an important standard to evaluate people’s living standard. The National Happiness Survey is a landmark survey that can be used by governments to make important international and national decisions. It is also an effective measure of national progress.Through the analysis of the relationship between happiness and several important factors that affect it, the most significant influencing factors can be obtained, and the results can be applied to the field of social psychology, which is conducive to social construction.(Helliwell J F, Huang H, Wang S,2016) According to the data from the World Happiness Report 2021(Rowan A N,2021), we believe that there are some important factors that affect the happiness index:GDP, Support, Freedom, Expectancy, Generosity, Corruption. We will examine the relationship between happiness and these factors. We are interested in performing the analysis for predicting Happiness score from these factors and which out of them are the most significant. These factors are vital to a country’s standard of living. In addition, happiness index scores are derived from people’s questionnaires.
+
+This article mainly consists of five parts. Section \ref{sec:Intro} is introduction of proposal. Section \ref{sec:MET} is Main definitions and method of the factors used in the analysis. Section \ref{sec:EDA} is the exploratory data analysis of happiness index and these factors in countries around the world, and studies the relationship between them. Section \ref{sec:FDA} is the concrete analysis of data by fitting linear regression model. Section \ref{sec:Conc} is the summary of analysis.
+
+# Main Definitions And Method {#sec:MET}
+
+## Population and Data {#sec:PAD}
+
+### Population {#sec:POP}
+
+147 countries in World Happiness Report 2021
+
+### Data Collection {#sec:DCO}
+
+We chose the data from World Happiness Report 2021. There is 149 regions in total but here we summarized the Taiwan(China) ,Hongkong(China) and China in one region named China. So the data has 147 observations
+The variables are shown in the followed table.
+
+```{r data1, echo = FALSE, eval = TRUE, warning = FALSE, message = FALSE,out.width = 2}
+#Please make a new table1
+#table2
+
+```
+
+```{r data3436, echo = FALSE, eval = TRUE, warning = FALSE, message = FALSE,out.heighth='110%',out.width='110%'}
+
+text_tbl <- data.frame(
+  category = c("Dependent variable", "Independent variable", "Independent variable", "Independent variable", "Independent variable", "Independent variable", "Independent variable", "Independent variable"),
+  variable = c(
+    "happiness",
+    "Region", 
+    "GDP", 
+    "Support ", 
+    "Freedom", 
+    "Expectancy", 
+    "Generosity", 
+    "Corruption"
+  ),
+  definition = c("state of well-being characterized by emotions ranging from contentment to intense joy", "one of the areas that a country is divided into, that has its own customs and/or its own government", "the total value of all the goods and services produced by a country in one year", "encouragement and help that government and society give to people", "he right to do or say what you want without anyone stopping you", "he number of years that a person is likely to live", "the fact of being generous", "dishonest or illegal behaviour, especially of people in authority"),
+  type = c(
+    "continuous variable",
+    "classified variable", 
+    "continuous variable", 
+    "continuous variable", 
+    "continuous variable", 
+    "continuous variable", 
+    "continuous variable", 
+    "continuous variable"
+  )
+)
+
+kable(text_tbl,caption = '\\label{tab:summaries1} variable definition') %>%
+  kable_styling(full_width = F,latex_options = "hold_position", font_size = 8) %>%
+  column_spec(1, bold = T, border_right = T) %>%
+  column_spec(2, width = "6em")%>%
+  column_spec(3, width = "10em")
+
+
+```
+
+
+
+```{r data3434, echo = FALSE, eval = TRUE, warning = FALSE, message = FALSE,out.heighth='110%',out.width='110%'}
+
+text_tbl <- data.frame(
+  Region = c("South Asia", "Central and Eastern Europe", "Middle East and North Africa", "Latin America and Caribbean", "Commonwealth of Independent States", "North America and ANZ", "Western Europe", "Sub-Saharan Africa", "Southeast Asia", "East Asia"),
+  Abbreviation_for_region = c(
+    "SA",
+    "C&EE", 
+    "ME&NA", 
+    "LA&C ", 
+    "CIS", 
+    "NA&A", 
+    "WE", 
+    "SSA", 
+    "SEA", 
+    "EA"
+  )
+)
+
+kable(text_tbl,caption = '\\label{tab:summaries2} Region') %>%
+  kable_styling(full_width = F,latex_options = "hold_position") %>%
+  column_spec(1, bold = T, border_right = T) %>%
+  column_spec(2, width = "12em")
+```
+## Objective {#sec:OBJ}
+
+### Primary Objective {#sec:PRO}
+Analyze the influencing factors of happiness
+
+### Secondary Objectives {#sec:SEO}
+Analyze the difference of happiness of residents around the world
+
+## Work-flow {#sec:FLOW}
+
+```{r data2, echo = FALSE, eval = TRUE, warning = FALSE, message = FALSE,out.heighth='110%',out.width='110%'}
+pos <- coordinates(pos = c(5,5))
+cc <- c("Introduction", "Definition\nAnd\nMethod","Exploratory\nData Analysis",
+        "Formal Data\nAnalysis", "Conclusion","NULL", "NULL","Map,\nBoxplot,\nScatter plot",
+        "Correlation\nmatrix,\nlinear model"," NULL")
+openplotmat(main = "Flow Chart")
+straightarrow(from = pos[1,] ,to = pos[2,],lwd = 2, arr.pos = 0.6)
+straightarrow(from = pos[2,] ,to = pos[3,],lwd = 2, arr.pos = 0.6)
+straightarrow(from = pos[3,] ,to = pos[4,],lwd = 2, arr.pos = 0.6)
+straightarrow(from = pos[4,] ,to = pos[5,],lwd = 2, arr.pos = 0.6)
+straightarrow(from = pos[4,] ,to = pos[5,],lwd = 2, arr.pos = 0.6)
+straightarrow(from = pos[3,] ,to = pos[8,],lwd = 2, arr.pos = 0.8)
+straightarrow(from = pos[4,] ,to = pos[9,],lwd = 2, arr.pos = 0.8)
+for(i in c(1, 2, 3, 4, 5)) textrect(pos[i,],radx = 0.08,rady = 0.1,shadow.size=0,lab = cc[i],cex=0.8)
+for(i in c(8, 9)) textrect(pos[i,],radx = 0.08,rady = 0.1,shadow.size=0,lab = cc[i],cex=0.8)
+```
+
+# Exploratory Data Analysis {#sec:EDA}
+
+## Analysis of the development situation of different regions   {#sec:ana}
+
+The table shows aggregate statistics on happiness and other variables for `r nrow(happiness)` countries.The standard deviation of happiness(`r round(sd(happiness$Happiness), 1)` )is 11 times greater than the standard deviation of support(`r round(sd(happiness$Support), 1)` ), freedom.Support, freedom(`r round(sd(happiness$Freedom), 1)` ) is relatively stable. Expectancy had the highest standard deviation (6.7), while freedom and support had the lowest standard deviation (0.1).
+
+```{r table, echo = FALSE}
+#The table of happiness
+happiness %>%
+summarise(name="Happiness", n=n(),Mean=round(mean(Happiness),digits=1), St.Dev=round(sd(Happiness),digits=1),
+Min=min(Happiness), Q1 = quantile(Happiness,0.25), Median=median(Happiness),
+Q3 = quantile(Happiness,0.75), Max=max(Happiness))-> table1
+
+#The table of GDP
+happiness %>%
+summarise(name="GDP", n=n(),Mean=round(mean(GDP),digits=1), St.Dev=round(sd(GDP),digits=1),
+Min=min(GDP), Q1 = quantile(GDP,0.25), Median=median(GDP),
+Q3 = quantile(GDP,0.75), Max=max(GDP)) -> table2
+
+#The table of support
+happiness %>%
+summarise(name="Support", n=n(),Mean=round(mean(Support),digits=1), St.Dev=round(sd(Support),digits=1),
+Min=min(Support), Q1 = quantile(Support,0.25), Median=median(Support),
+Q3 = quantile(Support,0.75), Max=max(Support)) -> table3
+
+#The table of Expectancy
+happiness %>%
+summarise(name="Expectancy", n=n(),Mean=round(mean(Expectancy),digits=1), St.Dev=round(sd(Expectancy),digits=1),
+Min=min(Expectancy), Q1 = quantile(Expectancy,0.25), Median=median(Expectancy),
+Q3 = quantile(Expectancy,0.75), Max=max(Expectancy)) -> table4
+
+#The table of Freedom
+happiness %>%
+summarise(name="Freedom", n=n(),Mean=round(mean(Freedom),digits=1), St.Dev=round(sd(Freedom),digits=1),
+Min=min(Freedom), Q1 = quantile(Freedom,0.25), Median=median(Freedom),
+Q3 = quantile(Freedom,0.75), Max=max(Freedom)) -> table5
+
+#The table of Generosity
+happiness %>%
+summarise(name="Generosity", n=n(),Mean=round(mean(Generosity),digits=1), St.Dev=round(sd(Generosity),digits=1),
+Min=min(Generosity), Q1 = quantile(Generosity,0.25), Median=median(Generosity),
+Q3 = quantile(Generosity,0.75), Max=max(Generosity)) -> table6
+
+#The table of Corruption
+happiness %>%
+summarise(name="Corruption", n=n(),Mean=round(mean(Corruption),digits=1), St.Dev=round(sd(Corruption),digits=1),
+Min=min(Corruption), Q1 = quantile(Corruption,0.25), Median=median(Corruption),
+Q3 = quantile(Corruption,0.75), Max=max(Corruption)) -> table7
+
+#Combining the two tables
+dplyr::union_all(table1,table2) -> table
+dplyr::union_all(table,table3) -> table
+dplyr::union_all(table,table4) -> table
+dplyr::union_all(table,table5) -> table
+dplyr::union_all(table,table6) -> table
+dplyr::union_all(table,table7) -> table
+
+table%>%
+  kable(caption = '\\label{tab:summaries} Summary statistics',  align = c("c", "c", "c")) %>%
+kable_styling(latex_options = "hold_position")
+
+```
+
+
+```{r map, echo = FALSE, eval = TRUE}
+#happiness world map
+#Firstly, draw a frame of the world map according to R's latitude and longitude, and save it.
+world_map <- map_data("world")
+mp <- ggplot(world_map, aes(x = long, y = lat, group = group)) +
+  geom_polygon(fill="white", colour = "gray50") +
+  theme_classic()
+ggsave("happiness.png", mp, width = 7, height = 5)
+
+#Combine the world map data in r with the dataset of this study to the world map by the same national name 
+library(maps)
+world_map %>% 
+  left_join(happiness, by = c("region"="Country")) -> act_world_map
+```
+
+```{r name, echo = FALSE, eval = TRUE}
+#Since the variable name of region is too long, we simplify the variable name
+happiness$Region[happiness$Region=="South Asia"] <- "SA"
+happiness$Region[happiness$Region=="Central and Eastern Europe"] <- "C&EE"
+happiness$Region[happiness$Region=="Middle East and North Africa"] <- "ME&NA"
+happiness$Region[happiness$Region=="Latin America and Caribbean"] <- "LA&C"
+happiness$Region[happiness$Region=="Commonwealth of Independent States"] <- "CIS"
+happiness$Region[happiness$Region=="North America and ANZ"] <- "NA&A"
+happiness$Region[happiness$Region=="Western Europe"] <- "WE"
+happiness$Region[happiness$Region=="Sub-Saharan Africa"] <- "SSA"
+happiness$Region[happiness$Region=="Southeast Asia"] <- "SEA"
+happiness$Region[happiness$Region=="East Asia"] <- "EA"
+```
+
+### Analysis of the happiness of different regions   {#sec:hap}
+
+Figure \ref{fig:plotHappiness} shows the distribution of happiness score across the countries around the world along with the boxplots which summarizes the geographical distribution numerically. The color gradient in the geographical plot gradually changes from blue to red. Bluer the region, it depicts a less happy country. On the other hand, the darker the gradient of red, the country is considered relatively happier.
+
+Table \ref{tab:Happiness} gives us the numerical values of the mean and median of happiness across the 10 regions. The table shows that North America and ANZ(NA&A) region has the highest median and mean happiness score compared to other regions whereas Sub-Saharan Africa(SSA) has the lowest median happiness score.
+
+```{r plot1, echo = FALSE, eval = TRUE,fig.align = "center", fig.cap = "\\label{fig:plotHappiness} Happiness plot",out.heighth='75%',out.width='75%',fig.pos = 'H'}
+library(cowplot)
+#Map the world, where grey areas have no happiness data, and the low is blue and the high  is red 
+mp1 <- ggplot(act_world_map, aes(x = long, y = lat, group = group)) +
+  geom_polygon(aes(fill= Happiness), colour = "white") +
+  scale_x_continuous(breaks = seq(-180, 210, 45), labels = function(x){paste0(x, "°")}) +
+  scale_y_continuous(breaks = seq(-60, 100, 30), labels = function(x){paste0(x, "°")}) +
+  scale_fill_gradient(low = "blue", high="red") +
+  labs(y="Latitude", x="Longitude"
+  ) +
+  theme_light()
+
+#boxplot of happiness
+boxplot1 <- ggplot(happiness)+geom_boxplot(aes(x=Region,y=Happiness,fill= Region))+
+  labs(x="Region",y="Happiness")+
+  guides(fill = FALSE) +
+  scale_fill_viridis_d() +
+  theme_light() +
+  theme(plot.title = element_text(size = 5,hjust = 0.5, face = "blue"),
+        text = element_text(size = 5,face = "bold",hjust = 0.5),
+        axis.title.y = element_text(face = "bold",hjust = 0.5),
+        axis.text.x = element_text(size =2.5,face ="bold"))
+ggdraw() +
+  draw_plot(mp1 + theme(legend.justification = "bottom"), 0, 0, 1, 1) +
+  draw_plot(boxplot1 + scale_color_viridis(discrete = TRUE) + 
+              theme(legend.justification = "bottom"), 0.073, 0.1, 0.23, 0.4) 
+```
+
+```{r table1, echo = FALSE, eval = TRUE}
+# Compute deive statistics by groups
+stable1 <- desc_statby(happiness, measure.var= "Happiness",grps = "Region")
+stable1 <- stable1[, c("Region","mean","median")]
+names(stable1) <- c("Region", "Mean of happiness","Median of happiness")
+stable1%>%
+  kable(caption = '\\label{tab:Happiness} Happiness Table',  align = c("c", "c", "c")) %>%
+kable_styling(latex_options = "hold_position")
+```
+
+### Analysis of the GDP of different regions   {#sec:GD}
+
+The geographical variations in the GDP has been depicted in the Figure \ref{fig:plotGDP}. The color gradient shifts from yellow to orange stating the increase in GDP. The boxplot along with the map distribution gives us a pictorial idea of the GDP score of different regions.
+
+Table \ref{tab:GDP} is the table of mean and median GDP score for the different geographical regions. It can be seen from the table and the boxplot that the region Western Europe(WE) has highest mean and median GDP while Sub-Saharan Africa(SSA) has the lowest mean and median GDP Scores.
+
+```{r plot2, echo = FALSE, eval = TRUE,fig.align = "center", fig.cap = "\\label{fig:plotGDP} GDP plot",out.heighth='75%',out.width='75%',fig.pos = 'H'}
+#Map the world, where grey areas have no GDP data, and the low is yellow and the high  is red
+mp2 <- ggplot(act_world_map, aes(x = long, y = lat, group = group)) +
+  geom_polygon(aes(fill= GDP), colour = "white") +
+  scale_x_continuous(breaks = seq(-180, 210, 45), labels = function(x){paste0(x, "°")}) +
+  scale_y_continuous(breaks = seq(-60, 100, 30), labels = function(x){paste0(x, "°")}) +
+  scale_fill_gradient(low = "yellow", high="red") +
+  labs(y="Latitude", x="Longitude"
+  ) +
+  theme_light()
+#boxplot of GDP
+boxplot2 <- ggplot(happiness)+geom_boxplot(aes(x=Region,y=GDP,fill= Region))+
+  labs(x="Region",y="GDP")+
+  guides(fill = FALSE) +
+  scale_fill_viridis_d() +
+  theme_light() +
+  theme(plot.title = element_text(size = 5,hjust = 0.5, face = "blue"),
+        text = element_text(size = 5,face = "bold",hjust = 0.5),
+        axis.title.y = element_text(face = "bold",hjust = 0.5),
+        axis.text.x = element_text(size =2.5,face ="bold"))
+
+ggdraw() +
+  draw_plot(mp2 + theme(legend.justification = "bottom"), 0, 0, 1, 1) +
+  draw_plot(boxplot2 + scale_color_viridis(discrete = TRUE) + 
+              theme(legend.justification = "bottom"), 0.073, 0.1, 0.23, 0.4) 
+```
+
+```{r table2, echo = FALSE, eval = TRUE}
+# Compute deive statistics by groups
+stable2 <- desc_statby(happiness, measure.var= "GDP",grps = "Region")
+stable2 <- stable2[, c("Region","mean","median")]
+names(stable2) <- c("Region", "Mean of GDP","Median of GDP")
+stable2%>%
+  kable(caption = '\\label{tab:GDP} GDP Table',  align = c("c", "c", "c")) %>%
+kable_styling(latex_options = "hold_position")
+```
+
+### Analysis of the Support of different regions   {#sec:SUP}
+
+Support score is the numerical value which determines the extend to which the people receive support from the government. Figure \ref{fig:plotSupport} is the support plot which shows the distribution of support score across different geographies. The colour ascends from yellow to orange (yellow depicting the regions with lower support and orange depicting region with greater support). The boxplot gives us a pictorial summary of the Support score across 10 different regions and also shows us potential outliers from that region.
+
+Table \ref{tab:Support} gives us the exact mean and median value of the Support score across the different regions. From the table, it can be concluded that Western Europe(WE) and North America and ANZ(NA&A) have almost the similar mean and median support score. This is similar to the distribution of happiness.North America and Australia (NA&A) scored the highest. The region with lowest mean Support score is Sub-Saharan Africa(SSA) and lowest median Support score is South Asia(SA).
+
+```{r plot3, echo = FALSE, eval = TRUE,fig.align = "center", fig.cap = "\\label{fig:plotSupport} Support plot",out.heighth='70%',out.width='70%',fig.pos = 'H'}
+#Map the world, where grey areas have no Support data, and the low is blue and the high  is red
+mp3 <- ggplot(act_world_map, aes(x = long, y = lat, group = group)) +
+  geom_polygon(aes(fill= Support), colour = "white") +
+  scale_x_continuous(breaks = seq(-180, 210, 45), labels = function(x){paste0(x, "°")}) +
+  scale_y_continuous(breaks = seq(-60, 100, 30), labels = function(x){paste0(x, "°")}) +
+  scale_fill_gradient(low = "yellow", high="red") +
+  labs(y="Latitude", x="Longitude"
+  ) +
+  theme_light()
+#boxplot of Support
+boxplot3 <- ggplot(happiness)+geom_boxplot(aes(x=Region,y=Support,fill= Region))+
+  labs(x="Region",y="Support")+
+  guides(fill = FALSE) +
+  scale_fill_viridis_d() +
+  theme_light() +
+  theme(plot.title = element_text(size = 5,hjust = 0.5, face = "blue"),
+        text = element_text(size = 5,face = "bold",hjust = 0.5),
+        axis.title.y = element_text(face = "bold",hjust = 0.5),
+        axis.text.x = element_text(size =2.5,face ="bold"))
+
+ggdraw() +
+  draw_plot(mp3 + theme(legend.justification = "bottom"), 0, 0, 1, 1) +
+  draw_plot(boxplot3 + scale_color_viridis(discrete = TRUE) + 
+              theme(legend.justification = "bottom"), 0.073, 0.1, 0.23, 0.4) 
+```
+
+```{r table3, echo = FALSE, eval = TRUE}
+# Compute deive statistics by groups
+stable3 <- desc_statby(happiness, measure.var= "Support",grps = "Region")
+stable3 <- stable3[, c("Region","mean","median")]
+names(stable3) <- c("Region", "Mean of Support","Median of Support")
+stable3%>%
+  kable(caption = '\\label{tab:Support} Support Table',  align = c("c", "c", "c")) %>%
+kable_styling(latex_options = "hold_position")
+```
+
+### Analysis of the Expectancy of different regions   {#sec:exp}
+
+Figure \ref{fig:plotExpectancy} is the Expectancy plot which gives the distribution of Expectancy across the regions with a boxplot giving representing numerical summaries. It can be seen from the boxplot that SSA region has the lowest median Expectancy score whereas North America and ANZ(NA&A) has the highest median Expectancy score.
+
+Table \ref{tab:Expectancy} summarises for us, the exact numerical values of mean and median expectancy score across all 10 regions. As anticipated from the boxplots, the table verifies our conclusion that NA&A has highest mean and median Expectancy score and SSA has the lowest score.
+
+```{r plot4, echo = FALSE, eval = TRUE,fig.align = "center", fig.cap = "\\label{fig:plotExpectancy} Expectancy plot",out.heighth='75%',out.width='75%',fig.pos = 'H'}
+#Map the world, where grey areas have no Expectancy data, and the low is blue and the high  is red
+mp4 <- ggplot(act_world_map, aes(x = long, y = lat, group = group)) +
+  geom_polygon(aes(fill= Expectancy), colour = "white") +
+  scale_x_continuous(breaks = seq(-180, 210, 45), labels = function(x){paste0(x, "°")}) +
+  scale_y_continuous(breaks = seq(-60, 100, 30), labels = function(x){paste0(x, "°")}) +
+  scale_fill_gradient(low = "yellow", high="red") +
+  labs(y="Latitude", x="Longitude"
+  ) +
+  theme_light()
+#boxplot of Expectancy
+boxplot4 <- ggplot(happiness)+geom_boxplot(aes(x=Region,y=Expectancy,fill= Region))+
+  labs(x="Region",y="Expectancy")+
+  guides(fill = FALSE) +
+  scale_fill_viridis_d() +
+  theme_light() +
+  theme(plot.title = element_text(size = 5,hjust = 0.5, face = "blue"),
+        text = element_text(size = 5,face = "bold",hjust = 0.5),
+        axis.title.y = element_text(face = "bold",hjust = 0.5),
+        axis.text.x = element_text(size =2.5,face ="bold"))
+
+ggdraw() +
+  draw_plot(mp4 + theme(legend.justification = "bottom"), 0, 0, 1, 1) +
+  draw_plot(boxplot4 + scale_color_viridis(discrete = TRUE) + 
+              theme(legend.justification = "bottom"), 0.073, 0.1, 0.23, 0.4) 
+```
+
+```{r table4, echo = FALSE, eval = TRUE}
+# Compute deive statistics by groups
+stable4 <- desc_statby(happiness, measure.var= "Expectancy",grps = "Region")
+stable4 <- stable4[, c("Region","mean","median")]
+names(stable4) <- c("Region", "Mean of Expectancy","Median of Expectancy")
+stable4%>%
+  kable(caption = '\\label{tab:Expectancy} Expectancy Table',  align = c("c", "c", "c")) %>%
+kable_styling(latex_options = "hold_position")
+```
+
+### Analysis of the Freedom of different regions   {#sec:free}
+
+Figure \ref{fig:plotFreedom} is a Freedom plot which shows us the distribution of freedom score across the regions. The boxplot is helpful to five number summaries of the freedom score for different regions. It can be seen from the boxplots that WE, NA&A and SEA have almost similar median freedom score whereas SSA has the lowest. The IQR for the Middle East and North Africa (ME&NA) is the highest.
+
+Table \ref{tab:Freedom} is the table of mean and median Freedom score. It can be concluded from the table that NA&A has the highest median score whereas SEA has the highest mean freedom score. SSA has the least mean and median Freedom score.
+
+```{r plot5, echo = FALSE, eval = TRUE,fig.align = "center", fig.cap = "\\label{fig:plotFreedom} Freedom plot",out.heighth='75%',out.width='75%',fig.pos = 'H'}
+#Map the world, where grey areas have no Freedom data, and the low is blue and the high  is red
+mp5 <- ggplot(act_world_map, aes(x = long, y = lat, group = group)) +
+  geom_polygon(aes(fill= Freedom), colour = "white") +
+  scale_x_continuous(breaks = seq(-180, 210, 45), labels = function(x){paste0(x, "°")}) +
+  scale_y_continuous(breaks = seq(-60, 100, 30), labels = function(x){paste0(x, "°")}) +
+  scale_fill_gradient(low = "yellow", high="red") +
+  labs(y="Latitude", x="Longitude"
+  ) +
+  theme_light()
+#boxplot of Freedom
+boxplot5 <- ggplot(happiness)+geom_boxplot(aes(x=Region,y=Freedom,fill= Region))+
+  labs(x="Region",y="Freedom")+
+  guides(fill = FALSE) +
+  scale_fill_viridis_d() +
+  theme_light() +
+  theme(plot.title = element_text(size = 5,hjust = 0.5, face = "blue"),
+        text = element_text(size = 5,face = "bold",hjust = 0.5),
+        axis.title.y = element_text(face = "bold",hjust = 0.5),
+        axis.text.x = element_text(size =2.5,face ="bold"))
+
+ggdraw() +
+  draw_plot(mp5 + theme(legend.justification = "bottom"), 0, 0, 1, 1) +
+  draw_plot(boxplot5 + scale_color_viridis(discrete = TRUE) + 
+              theme(legend.justification = "bottom"), 0.073, 0.1, 0.23, 0.4) 
+```
+
+```{r table5, echo = FALSE, eval = TRUE}
+# Compute deive statistics by groups
+stable5 <- desc_statby(happiness, measure.var= "Freedom",grps = "Region")
+stable5 <- stable5[, c("Region","mean","median")]
+names(stable5) <- c("Region", "Mean of Freedom","Median of Freedom")
+stable5%>%
+  kable(caption = '\\label{tab:Freedom} Freedom Table',  align = c("c", "c", "c")) %>%
+kable_styling(latex_options = "hold_position")
+```
+
+### Analysis of the Generosity of different regions   {#sec:gen}
+
+Generosity Scores distribution can be seen in Figure \ref{fig:plotGenerosity}. The boxplot at left bottom left can help us analyse the generosity score amongst different regions. We can see that NA&A region and SEA region has almost similar median generosity score. 
+
+To verify the judgements that can be made from the boxplot, Table \ref{tab:Generosity} can be helpful which gives numerical values of mean and median Generosity score for different regions. It can be concluded from the table that SEA has the highest median generosity score and LA&C region has the lowest median generosity score.
+
+```{r plot6, echo = FALSE, eval = TRUE,fig.align = "center", fig.cap = "\\label{fig:plotGenerosity} Generosity plot",out.heighth='75%',out.width='75%',fig.pos = 'H'}
+#Map the world, where grey areas have no Generosity data, and the low is blue and the high  is red
+mp6 <- ggplot(act_world_map, aes(x = long, y = lat, group = group)) +
+  geom_polygon(aes(fill= Generosity), colour = "white") +
+  scale_x_continuous(breaks = seq(-180, 210, 45), labels = function(x){paste0(x, "°")}) +
+  scale_y_continuous(breaks = seq(-60, 100, 30), labels = function(x){paste0(x, "°")}) +
+  scale_fill_gradient(low = "yellow", high="red") +
+  labs(y="Latitude", x="Longitude"
+  ) +
+  theme_light()
+#boxplot of Generosity
+boxplot6 <- ggplot(happiness)+geom_boxplot(aes(x=Region,y=Generosity,fill= Region))+
+  labs(x="Region",y="Generosity")+
+  guides(fill = FALSE) +
+  scale_fill_viridis_d() +
+  theme_light() +
+  theme(plot.title = element_text(size = 5,hjust = 0.5, face = "blue"),
+        text = element_text(size = 5,face = "bold",hjust = 0.5),
+        axis.title.y = element_text(face = "bold",hjust = 0.5),
+        axis.text.x = element_text(size =2.5,face ="bold"))
+
+ggdraw() +
+  draw_plot(mp6 + theme(legend.justification = "bottom"), 0, 0, 1, 1) +
+  draw_plot(boxplot6 + scale_color_viridis(discrete = TRUE) + 
+              theme(legend.justification = "bottom"), 0.073, 0.1, 0.23, 0.4) 
+```
+
+```{r table6, echo = FALSE, eval = TRUE}
+# Compute deive statistics by groups
+stable6 <- desc_statby(happiness, measure.var= "Generosity",grps = "Region")
+stable6 <- stable6[, c("Region","mean","median")]
+names(stable6) <- c("Region", "Mean of Generosity","Median of Generosity")
+stable6%>%
+  kable(caption = '\\label{tab:Generosity} Generosity Table',  align = c("c", "c", "c")) %>%
+kable_styling(latex_options = "hold_position")
+```
+
+### Analysis of the Corruption of different regions   {#sec:cor}
+
+Variations in corruption score across different geographies can be seen from Figure \ref{fig:plotCorruption}. The colour gradient ascends from yellow to orange. Yellow depicting the lowest corruption score and orange depicting the highest. The boxplot along with the geographical map summarises graphically the variations in freedom score for different region. It can be seen from the boxplot that WE region has the highest IQR. C&EE region has the highest Corruption score and NA&A has the lowest.
+
+```{r plot7, echo = FALSE, eval = TRUE,fig.align = "center", fig.cap = "\\label{fig:plotCorruption} Corruption plot",out.heighth='75%',out.width='75%',fig.pos = 'H'}
+#Map the world, where grey areas have no Corruption data, and the low is blue and the high  is red
+mp7 <- ggplot(act_world_map, aes(x = long, y = lat, group = group)) +
+  geom_polygon(aes(fill= Corruption), colour = "white") +
+  scale_x_continuous(breaks = seq(-180, 210, 45), labels = function(x){paste0(x, "°")}) +
+  scale_y_continuous(breaks = seq(-60, 100, 30), labels = function(x){paste0(x, "°")}) +
+  scale_fill_gradient(low = "yellow", high="red") +
+  labs(y="Latitude", x="Longitude"
+  ) +
+  theme_light()
+#boxplot of Corruption
+boxplot7 <- ggplot(happiness)+geom_boxplot(aes(x=Region,y=Corruption,fill= Region))+
+  labs(x="Region",y="Corruption")+
+  guides(fill = FALSE) +
+  scale_fill_viridis_d() +
+  theme_light() +
+  theme(plot.title = element_text(size = 5,hjust = 0.5, face = "blue"),
+        text = element_text(size = 5,face = "bold",hjust = 0.5),
+        axis.title.y = element_text(face = "bold",hjust = 0.5),
+        axis.text.x = element_text(size =2.5,face ="bold"))
+
+ggdraw() +
+  draw_plot(mp7 + theme(legend.justification = "bottom"), 0, 0, 1, 1) +
+  draw_plot(boxplot7 + scale_color_viridis(discrete = TRUE) + 
+              theme(legend.justification = "bottom"), 0.073, 0.1, 0.23, 0.4) 
+```
+
+```{r table7, echo = FALSE, eval = TRUE}
+# Compute deive statistics by groups
+stable7 <- desc_statby(happiness, measure.var= "Corruption",grps = "Region")
+stable7 <- stable7[, c("Region","mean","median")]
+names(stable7) <- c("Region", "Mean of Corruption","Median of Corruption")
+stable7%>%
+  kable(caption = '\\label{tab:Corruption} Corruption Table',  align = c("c", "c", "c")) %>%
+kable_styling(latex_options = "hold_position")
+```
+
+
+## Analysis of the influencing factors of happiness   {#sec:inf}
+
+### Analysis of correlation between Happiness and GDP    {#sec:GDP}
+
+Figure \ref{fig:point2} is a scatterplot of happiness scores and GDP level in ten regions of the map. In most of the region, the GDP level and happiness scores show a linear positive relationship.Therefore, it is necessary to use a linear regression model to evaluate the relationship between GDP and happiness.
+
+```{r scatter2, echo = FALSE, eval = TRUE, fig.cap = "\\label{fig:point2} The relationship between happiness and GDP",fig.pos = "H",out.width = '70%', fig.align = "center"}
+#做happiness和GDP的a scatter plot
+ggplot(happiness,aes(x=GDP,y=Happiness,color=Region))+
+  geom_point()+
+  geom_smooth(method = "lm",se=FALSE)+
+  facet_wrap(~Region ) +
+  labs(x="GDP",y="happiness")+
+  guides(fill = FALSE) +
+  scale_fill_viridis_d() +
+  theme_light() +
+  theme(plot.title = element_text(size = 14,hjust = 0.5, face = "blue"),
+        text = element_text(size = 12,face = "bold",hjust = 0.5),
+        axis.title.y = element_text(face = "bold",hjust = 0.5),
+        axis.text.x = element_text(size = 10,face ="bold"))
+
+```
+
+
+### Analysis of correlation between Happiness and Support    {#sec:Support}
+Figure \ref{fig:point} is a scatterplot of happiness scores and support scores in ten regions of the map. ME&NA,SEA,WE,NA&A show strong positive correlation,and most of the rest are Moderate Correlation (Because some regions only have few countries and the scale of the data is not very large to check if it is positive correlation). Therefore,it is necessary to use a linear regression model to evaluate the relationship between support and happiness.
+
+```{r scatter, echo = FALSE, eval = TRUE, fig.cap = "\\label{fig:point} The relationship between happiness and support",fig.pos = "H",out.width = '70%', fig.align = "center"}
+#做happiness和support的a scatter plot
+ggplot(happiness,aes(x=Support,y=Happiness,color=Region))+
+  geom_point()+
+  geom_smooth(method = "lm",se=FALSE)+
+  facet_wrap(~Region ) +
+  labs(x="Support",y="happiness")+
+  guides(fill = FALSE) +
+  scale_fill_viridis_d() +
+  theme_light() +
+  theme(plot.title = element_text(size = 14,hjust = 0.5, face = "blue"),
+        text = element_text(size = 12,face = "bold",hjust = 0.5),
+        axis.title.y = element_text(face = "bold",hjust = 0.5),
+        axis.text.x = element_text(size = 10,face ="bold"))
+```
+
+### Analysis of correlation between Happiness and Expectancy    {#sec:Expectancy}
+Figure \ref{fig:point3} is a scatterplot of happiness scores and Expectancy in ten regions of the map.
+In most of the region, the Expectancy and happiness scores show a linear positive relationship.
+Therefore, it is necessary to use a linear regression model to evaluate the relationship 
+between Expectancy and happiness.
+
+```{r scatter3, echo = FALSE, eval = TRUE, fig.cap = "\\label{fig:point3} The relationship between happiness and Expectancy",fig.pos = "H",out.width = '70%', fig.align = "center"}
+#做happiness和Expectancy的a scatter plot
+ggplot(happiness,aes(x=Expectancy,y=Happiness,color=Region))+
+  geom_point()+
+  geom_smooth(method = "lm",se=FALSE)+
+  facet_wrap(~Region ) +
+  labs(x="Expectancy",y="happiness")+
+  guides(fill = FALSE) +
+  scale_fill_viridis_d() +
+  theme_light() +
+  theme(plot.title = element_text(size = 14,hjust = 0.5, face = "blue"),
+        text = element_text(size = 12,face = "bold",hjust = 0.5),
+        axis.title.y = element_text(face = "bold",hjust = 0.5),
+        axis.text.x = element_text(size = 10,face ="bold"))
+```
+
+### Analysis of correlation between Happiness and Freedom    {#sec:Freedom}
+Figure \ref{fig:point4} is a scatterplot of happiness scores and Freedom in ten regions of the map.
+In most of the region, the Freedom and happiness scores show a linear positive relationship.
+Therefore, it is necessary to use a linear regression model to evaluate the relationship 
+between Freedom and happiness.
+
+```{r scatter4, echo = FALSE, eval = TRUE, fig.cap = "\\label{fig:point4} The relationship between happiness and Freedom",fig.pos = "H",out.width = '65%', fig.align = "center"}
+#做happiness和Freedom的a scatter plot
+ggplot(happiness,aes(x=Freedom,y=Happiness,color=Region))+
+  geom_point()+
+  geom_smooth(method = "lm",se=FALSE)+
+  facet_wrap(~Region ) +
+  labs(x="Freedom",y="happiness")+
+  guides(fill = FALSE) +
+  scale_fill_viridis_d() +
+  theme_light() +
+  theme(plot.title = element_text(size = 14,hjust = 0.5, face = "blue"),
+        text = element_text(size = 12,face = "bold",hjust = 0.5),
+        axis.title.y = element_text(face = "bold",hjust = 0.5),
+        axis.text.x = element_text(size = 10,face ="bold"))
+```
+
+### Analysis of correlation between Happiness and Generosity    {#sec:Generosity}
+Figure \ref{fig:point5} is a scatterplot of happiness scores and Generosity in ten regions of the map.
+In most of the region, the Generosity and happiness scores show stable lines.
+Therefore, this variable may not related to the happiness and we should do more analysis to check it.
+
+```{r scatter5, echo = FALSE, eval = TRUE, fig.cap = "\\label{fig:point5} The relationship between happiness and Generosity",fig.pos = "H",out.width = '65%', fig.align = "center"}
+#做happiness和Generosity的a scatter plot
+ggplot(happiness,aes(x=Generosity,y=Happiness,color=Region))+
+  geom_point()+
+  geom_smooth(method = "lm",se=FALSE)+
+  facet_wrap(~Region ) +
+  labs(x="Generosity",y="happiness")+
+  guides(fill = FALSE) +
+  scale_fill_viridis_d() +
+  theme_light() +
+  theme(plot.title = element_text(size = 14,hjust = 0.5, face = "blue"),
+        text = element_text(size = 12,face = "bold",hjust = 0.5),
+        axis.title.y = element_text(face = "bold",hjust = 0.5),
+        axis.text.x = element_text(size = 10,face ="bold"))
+```
+
+### Analysis of correlation between Happiness and Corruption    {#sec:Corruption}
+Figure \ref{fig:point6} is a scatterplot of happiness scores and Corruption in ten regions of the map.
+We can see the regions ME&NA,SA and WE show obvious negative relationship. 
+Except region SSA an LA&C, other regions also have a slightly negative correlation.
+Therefore, we can try to use a linear regression model to evaluate it.
+
+```{r scatter6, echo = FALSE, eval = TRUE, fig.align = "center",out.width = '65%',fig.cap = "\\label{fig:point6} The relationship between happiness and Corruption",fig.pos = "H"}
+#做happiness和Corruption的a scatter plot
+ggplot(happiness,aes(x=Corruption,y=Happiness,color=Region))+
+  geom_point()+
+  geom_smooth(method = "lm",se=FALSE)+
+  facet_wrap(~Region ) +
+  labs(x="Corruption",y="happiness")+
+  guides(fill = FALSE) +
+  scale_fill_viridis_d() +
+  theme_light() +
+  theme(plot.title = element_text(size = 14,hjust = 0.5, face = "blue"),
+        text = element_text(size = 12,face = "bold",hjust = 0.5),
+        axis.title.y = element_text(face = "bold",hjust = 0.5),
+        axis.text.x = element_text(size = 10,face ="bold"))
+
+```
+
+
+
+
+
+
+## Analysis of correlation between Happiness and its impacted factors    {#sec:Corruption1}
+
+```{r scatter8, echo = FALSE, eval = TRUE, fig.align = "center", out.width = '70%',fig.cap = "\\label{fig:point8} The relationship of factors related to happiness",fig.pos = "H"}
+
+Num.cols <- sapply(happiness, is.numeric)
+
+Cor.data <- cor(happiness[, Num.cols])
+
+corrplot(Cor.data, method = 'color')
+
+```
+
+Apparently, "Corruption" is negatively correlated with all the other numerical variables.One possible explaination here this could be, the lower the Corruption, the higher the happiness value.Generosity seems to have weak negative relationship with happiness. Other variables show positive relation with happiness score. The concrete evidence of this can be shown in Formal Data Analysis.
+
+```{r scatter9, echo = FALSE, eval = TRUE, fig.align = "center", out.width = '70%',fig.cap = "\\label{fig:point00} The relationship of correlation coefficient of happiness",fig.pos = "H"}
+
+data= cor(happiness[c(3:9)])
+
+corrplot(data, method = "number")
+
+```
+
+# Formal Data Analysis {#sec:FDA}
+## Analysis of correlation Test  {#sec:FDACOR}
+
+Firstly, we can see the correlation between Continuous independent variables GDP, Support, Expectancy, Freedom, Generosity, Corruption and dependent variable Happiness.
+
+```{r corr_matrix, echo = FALSE, eval = TRUE, fig.align = "center", out.width = '70%',fig.cap = "\\label{fig:point00} Correlation matrix of data",fig.pos = "H"}
+### correlation matrix using ggpairs
+library(ggnewscale)
+ggpairs(happiness[3:9],
+        upper = list(continuous = "cor", combo = "box_no_facet", discrete = "count", na ="na"),
+        lower = list(continuous = "points", combo = "facethist", discrete = "facetbar", na ="na",mapping = aes(col = "blue")),
+        diag = list(continuous = "densityDiag", discrete = "barDiag", na = "naDiag"),
+  params = NULL,)+
+  theme_test()+
+  theme(plot.title = element_text(size = 8,hjust = 0.5, face = "bold"),
+        text = element_text(size = 8,face = "bold",hjust = 0.5),
+        axis.title.y = element_text(face = "bold",hjust = 0.5),
+        axis.text.x = element_text(size = 8,face ="bold"))
+```
+
+According to the correlation matrix, we can see there is a positive relationship between GDP, Support,
+Expectancy, Freedom and Happiness. And the correlation coefficient of Generosity and Happiness equal to -
+0.015 which are not very related to Happiness and among the other 5 continuous variables, some have a high correlation coefficient with others which may cause a multicollinearity
+problem, so it is necessary to do a Multicollinearity test to choose which variables can be used. 
+
+## Analysis of multiple collinear test
+
+So we do the test of vif and Here is the result.When VIF>10, there is a serious problem of collinearity between the variables. According to the above table, there is no VIF value greater than 10. Therefore, there is no collinearity among these variables.
+
+```{r vif, echo = FALSE, eval = TRUE}
+### presumptive model (contain all variables we may want)
+model<-lm(data = happiness,formula = Happiness~Region+GDP+Support+Freedom+Corruption+Expectancy)
+library(carData)
+library(car)
+vif_table <- vif(model)
+vif_table%>%
+  kable(caption = '\\label{tab:Expectancy} VIF value Table',  align = c("c", "c", "c")) %>%
+kable_styling(latex_options = "hold_position")
+```
+
+
+\newpage
+
+## Analysis of linear-regression 
+
+To begin our analyze of happiness score formally, we fit the following linear model to the data.
+
+$$\widehat{\mbox{Happiness}}_{\mbox{ij}} = \widehat{\alpha} +
+\widehat{\beta}_{\mbox{1}} \cdot \mathbb{I}_{\mbox{Region}}(i) +
+ \widehat{\beta}_{\mbox{2}} \cdot {\mbox{GDP}}_{\mbox{j}} +
+ \widehat{\beta}_{\mbox{3}} \cdot {\mbox{Support}}_{\mbox{j}} +
+ \widehat{\beta}_{\mbox{4}} \cdot {\mbox{Expectancy}}_{\mbox{j}}+
+ \widehat{\beta}_{\mbox{5}} \cdot {\mbox{Freedom}}_{\mbox{j}}+ 
+ \widehat{\beta}_{\mbox{6}} \cdot {\mbox{Corruption}}_{\mbox{j}} 
+ \epsilon_i, ~~~~ \epsilon_i \sim N(0, \sigma^2)$$
+
+where
+
+the intercept $\widehat{\mbox{Happiness}}_{\mbox{ij}}$ is the expected value of the happiness in the $i \mbox{th}$ region and of the $j \mbox{th}$ independent variables in the sample;
+
+the intercept $\widehat{\alpha}$ is the mean Happiness for the baseline category of C&EE which represents Central and Eastern Europe;
+
+$\widehat{\beta}_{\mbox{1}}$ is the difference in the mean Happiness of 9 other regions; 
+
+$\widehat{\beta}_{\mbox{2-6}}$ is the value of Happiness that changes as the corresponding independent variable changes by one unit;
+
+${\mbox{variables}}_{\mbox{j}}$ is the $j \mbox{th}$ observations of the continuous variables;
+
+and
+
+$\mathbb{I}_{\mbox{Region}}(i)$ is an indicator function such that
+
+$$\mathbb{I}_{\mbox{Region}}(i)=\left\{
+\begin{array}{ll}
+1 ~~~ \mbox{if region of} ~ j \mbox{th observations belongs to the }{\mbox{Region}}(i),\\
+0 ~~~ \mbox{if region of} ~ j \mbox{th observations belongs to the region other than }{\mbox{Region}}(i).\\
+\end{array}
+\right.$$
+
+But now we have to test if all the four continuous variables in can make the model best using the p-value to check their significance and AIC test and other criterion to solve over-fitting problems.
+
+```{r test, echo = FALSE, eval = TRUE}
+### select all the possible combination of models
+model.selection<-ols_step_all_possible(model)
+### gather the aic,cp,R-square-adj in a table(R-square is not use so I delete it.)
+data_table <- data.table(Model=model.selection$predictors,
+           AIC=model.selection$aic,
+           Cp=model.selection$cp,
+           R2adj=model.selection$adjr)
+data_table %>%
+  arrange(AIC) -> data_table_aicmin
+data_table_aicmin10 <- head(data_table_aicmin,num(10))
+data_table_aicmin10 %>%
+  kable(caption = '\\label{tab:Expectancy} Table of models of the minimum of AIC(Top 10)',  align = c("c", "c", "c")) %>%
+kable_styling(latex_options = "hold_position")
+```
+
+According to the table which contains best 10 models, the first two models have lower AIC and higher R2adj. Next we have to check the significance of these four continuous variables.
+
+$$\widehat{\mbox{Happiness}}_{\mbox{ij}} = \widehat{\alpha} +
+\widehat{\beta}_{\mbox{1}} \cdot \mathbb{I}_{\mbox{Region}}(i) +
+ \widehat{\beta}_{\mbox{2}} \cdot {\mbox{GDP}}_{\mbox{j}} +
+ \widehat{\beta}_{\mbox{3}} \cdot {\mbox{Support}}_{\mbox{j}} +
+ \widehat{\beta}_{\mbox{4}} \cdot {\mbox{Freedom}}_{\mbox{j}}+ 
+ \widehat{\beta}_{\mbox{5}} \cdot {\mbox{Corruption}}_{\mbox{j}} 
+ \epsilon_i, ~~~~ \epsilon_i \sim N(0, \sigma^2)$$
+
+We choose the first model on the data first, the following estimates of ${\alpha}$ (intercept) and ${\beta}_{\mbox{1-5}}$ are returned:
+
+```{r lmtable, echo = FALSE, eval = TRUE}
+### make a table to compare the p-value
+model<-lm(data = happiness,formula = Happiness~Region+GDP+Support+Freedom+Corruption)
+get_regression_table(model) %>%
+dplyr::select(term,estimate,p_value) %>%
+kable(caption = '\\label{tab:reg} Estimates of the parameters from the fitted linear
+regression model 1st.') %>%
+kable_styling(latex_options = 'HOLD_position')
+```
+
+We noticed that the p-value of "Corruption" is not significant(0.131), so now we can try the 2nd model:
+
+$$\widehat{\mbox{Happiness}}_{\mbox{ij}} = \widehat{\alpha} +
+\widehat{\beta}_{\mbox{1}} \cdot \mathbb{I}_{\mbox{Region}}(i) +
+ \widehat{\beta}_{\mbox{2}} \cdot {\mbox{GDP}}_{\mbox{j}} +
+ \widehat{\beta}_{\mbox{3}} \cdot {\mbox{Support}}_{\mbox{j}} +
+ \widehat{\beta}_{\mbox{4}} \cdot {\mbox{Freedom}}_{\mbox{j}}+ 
+ \epsilon_i, ~~~~ \epsilon_i \sim N(0, \sigma^2),$$
+
+```{r lmtable2, echo = FALSE, eval = TRUE}
+model2<-lm(data = happiness,formula = Happiness~Region+GDP+Support+Freedom)
+get_regression_table(model2) %>%
+dplyr::select(term,estimate,p_value) %>%
+kable(caption = '\\label{tab:reg2} Estimates of the parameters from the fitted linear
+regression model 2nd.') %>%
+kable_styling(latex_options = 'HOLD_position')
+```
+
+we can see that the variables: GDP, Support, Freedom are all significant, so we prefer to select this model as our final model.
+
+## Plots for checking model assumptions
+
+```{r lmplot5, echo=FALSE, fig.width = 13, fig.align = "center",fig.cap = "\\label{fig:plot5}plots of the Residual.", fig.pos = 'H', message = FALSE}
+regression.points <- get_regression_points(model2)
+###assess our first two model assumptions by producing scatterplots of our residuals against each of our explanatory variables
+p1<-ggplot(regression.points, aes(x = Support, y = residual)) +
+  geom_point() +
+  geom_hline(yintercept = 0, col = "blue", size = 1)+
+  theme_light()
+
+p2<-ggplot(regression.points, aes(x = GDP, y = residual)) +
+  geom_point() +
+  geom_hline(yintercept = 0, col = "blue", size = 1)+
+  theme_light()
+
+p3<-ggplot(regression.points, aes(x = Freedom, y = residual)) +
+  geom_point() +
+  geom_hline(yintercept = 0, col = "blue", size = 1)+
+  theme_light()
+
+### put the three plots together
+a <- grid.arrange(p1,p2,p3,ncol=3)
+### check the residual if it is normalized
+
+p4<-ggplot(regression.points, aes(x = residual)) +
+  geom_histogram(color = "white",bins=40) +
+  labs(x = "Residual")+
+  theme_light()
+p4
+
+### residuals vs fitted, normal Q-Q,
+autoplot(model2,which = c(1,2))+
+  theme_light()
+
+```
+
+The assumptions of the residuals having mean zero and constant variability across all values of the explanatory variable appear to be valid.
+
+The residuals appear to be normally distributed and centred at zero.
+
+The residuals vs fitted values plot that the residuals are randomly scatter around the zero line.
+
+From the Normal Q-Q plot that the residuals are approximately consistent with a normal distribution.
+
+# Conclusions {#sec:Conc}
+
+Broadly, happiness is a measure of how happy people are in their lives. It contains many kinds of aspects, and we can summarize these into two main parts: economic level and spiritual level.
+
+With a high level of GDP people can achieve materialistic satisfaction. For example, satisfying food and clothing, may help people pursue higher quality of life. And in linear model, European countries and North American countries have a higher happiness level. According to the “Global economic ranking”, many European countries and North American countries come out top.
+
+Apart from economical aspect like GDP, high spiritual level is also helpful for the increasing of happiness. Support and Freedom are two elements of spiritual well-being. A high support can help people for many kinds of things in their life. For example, government can help their children to have a good education; Government can help local people to find a job. Government can help people for their medical treatment and can help provide people with fundamental infrastructure and so on.
+
+In a highly liberal country, people are more open while choosing what they want to do and therefore can achieve spiritual satisfaction with this Freedom. And in some “Relatively Closed countries” people are not free not for making their own choices. People residing in such countries absolutely cannot have a high happiness level. Hence, Freedom plays a vital role in elevating happiness.
+
+In all, the region with high GDP, good support and high freedom score is bound to have high happiness score. We chose the region to be one categorical variable. But it’s worth noting that some regions are significantly happier than others, such as North America and Western Europe; Some regions have significantly lower levels of happiness than others: South and Southeast Asia. This may be due to cultural differences, such as religious factors, that cause people in different regions to have different views of happiness. In addition, some countries score more than others because they might have formed complete social systems over hundreds of years, such as more humane employment system, retirement welfare and more habitable environment, which are more conducive to improving resident’s happiness score , even though GDP, government support and freedom are the same.
+
+# Reference {#sec:REF}
+
+1.Helliwell J F, Huang H, Wang S. The distribution of world happiness[J]. World Happiness, 2016, 8.
+
+2.Lin K. Social quality and happiness—An analysis of the survey data from three Chinese cities[J]. Applied Research in Quality of Life, 2016, 11(1): 23-40.
+
+3.Rowan A N. World Happiness 2021[J]. WellBeing News, 2021, 3(3): 3.
+
+
