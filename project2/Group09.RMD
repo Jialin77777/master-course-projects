@@ -1,6 +1,7 @@
 ---
 title: "Analysing IMDB film dataset to predict IMDB ratings"
-
+author: "Jialin Sun, yiming lei, Yilin Liang, Ruilin Ma, Rachit Rakesh Khade"
+date: "2021/7/23"
 output:
   pdf_document:
     latex_engine: pdflatex
